@@ -3,11 +3,17 @@ Imports System.Runtime.InteropServices
 
 Public Class Lyricker
 
+    Dim writer As System.IO.StreamWriter
+    Dim chartText() As String
+
    <DllImport("user32.dll", CharSet:=CharSet.Auto)> _
     Private Shared Function SendMessage(hWnd As IntPtr, msg As Integer, wParam As Integer, <MarshalAs(UnmanagedType.LPWStr)> lParam As String) As Int32
     End Function
 
     Const EM_SETCUEBANNER As Integer = &H1501
+
+    Const PHRASE_START_SPACE As Integer = 24
+    Const PHRASE_END_SPACE As Integer = 48
 
      Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Me.Location = New Point(CInt((Screen.PrimaryScreen.WorkingArea.Width / 2) - (Me.Width / 2)),
@@ -48,22 +54,115 @@ Public Class Lyricker
             Return
         End If
 
-        If TextboxLyrics.Text.Length = 0 'User can still write only spaces " " to break the program :(
+        If Trim(TextboxLyrics.Text).Length = 0
             MsgBox("Please enter lyrics")
             Return
         End If
 
+        Dim chartFile As String = My.Computer.FileSystem.ReadAllText(path) 'Store the original file for backup
+
         Try
             writeLyrics(path)
-       Catch ex As Exception
+        Catch ex As Exception
             MsgBox("Something went wrong :(" & vbNewLine & vbNewLine & "Error message: """ & ex.Message & """")
-            Me.Close
+            writer.Close()
+            My.Computer.FileSystem.WriteAllText(path, chartFile, False) 'Write the backup to the file
+            'Me.Close
         End Try
     End Sub
 
     Private sub writeLyrics(path As String)
 
-        Dim lyrics As String = TextboxLyrics.Text
+        '*****************************************************************************************************************
+        ' Write phrase_start and phrase_end and fill lyrics events
+        '*****************************************************************************************************************
+
+        chartText = System.IO.File.ReadAllLines(path)
+        writer = My.Computer.FileSystem.OpenTextFileWriter(path, False)
+
+        Dim syllables As new ArrayList()
+        syllables = getSyllables()
+        Dim syllablesTotal As Integer = syllables.Count
+
+        Dim syllableNo As Integer
+        Dim lyricStartIndex As Integer
+        Dim tickNumberEndIndex As Integer
+        Dim tickNumber As Integer
+
+        For i As Integer = LBound(chartText) To UBound(chartText)
+
+            If InStr(chartText(i), "= E ""lyric") <> 0 ' If a lyric event is on this line
+
+                If syllableNo = syllables.Count
+                    syllableNo += 1
+                    Exit For
+                End If
+
+                'Check if we should write a phrase_start event before the lyric event
+                If syllableNo = 0 OrElse InStr(syllables.Item(syllableNo - 1), ".") <> 0 'If first syllable, or if a period is in the previous syllable
+                    'Get the tick number of the current lyric event, so that we can add a phrase_start event a specified number of ticks BEFORE it
+                    tickNumberEndIndex = InStr(chartText(i), "=") - 1
+                    tickNumber = RSet(chartText(i), tickNumberEndIndex)
+                    writer.WriteLine("  " & tickNumber - PHRASE_START_SPACE & " = E ""phrase_start""")
+                End If
+                
+                'Write the lyric event with lyrics
+                lyricStartIndex = InStr(chartText(i), "c") + 1 'Find the start index of where we want to insert the syllable
+                chartText(i) = LSet(chartText(i), lyricStartIndex) 'Cut the string to end after "lyric" (to override existing lyrics in case they uhh exist)
+                chartText(i) = Replace(chartText(i), "lyric ", "lyric " & Replace(syllables.Item(syllableNo), ".", "") & """") 'Add the syllable
+                writer.WriteLine(chartText(i))
+
+                'Check if we should write a phrase_end event after the lyric event
+                If InStr(syllables.Item(syllableNo), ".") <> 0 'If a period is in the current syllable
+                    
+                    If syllableNo = syllablesTotal - 1 'Special case for last syllable
+                        'Get the tick number of the current lyric event, so that we can add a phrase_end event a specified number of ticks AFTER it
+                        tickNumberEndIndex = InStr(chartText(i), "=") - 1
+                        tickNumber = RSet(chartText(i), tickNumberEndIndex)
+                        writer.WriteLine("  " & tickNumber + PHRASE_END_SPACE & " = E ""phrase_end""")
+                    Else
+                    'Get the tick number of the NEXT lyric event, so that we can add a phrase_end event a specified number of ticks BEFORE it
+                    For j As Integer = i + 1 To UBound(chartText)
+                        If InStr(chartText(j), "= E ""lyric") <> 0
+                            tickNumberEndIndex = InStr(chartText(j), "=") - 1
+                            tickNumber = RSet(chartText(j), tickNumberEndIndex)
+                            Exit For
+                        End If
+                    Next j
+                    writer.WriteLine("  " & tickNumber - PHRASE_END_SPACE & " = E ""phrase_end""")
+                    End If
+                End If
+                syllableNo += 1
+            Else 'If no phrase event on the line
+                'Just write the line without changing it, if it's not a phrase event
+                'Already existing phrase events are skipped because new ones are already written in the above lines
+                'This way we don't get duplicate phrase events and don't keep phrase events that are removed in the text box i.e. deleted a period
+                If InStr(chartText(i), "phrase_") = 0 
+                    writer.WriteLine(chartText(i)) 'Just write the line without changing it
+                Else
+                    'Do nothing i.e. skip the line
+                End If
+            End If
+        Next i
+        writer.Close()
+        '*****************************************************************************************************************
+
+        If syllableNo < syllables.Count
+            MsgBox("Some of the lyrics have been written. The rest couldn't because there's too many syllables in the text, compared to lyric events. You may have a word that should not be split up, or you have too few lyric events")
+        Else If syllableNo > syllables.Count
+            MsgBox("Lyrics have been written but there's too few syllables to fill out all the lyric events in the chart. You may be missing some lyrics, have a word that should be split up, or you have too many lyric events")
+        Else
+            MsgBox("Lyrics written successfully")
+        End If
+    End Sub
+
+    Private Function getSyllables
+
+        '*****************************************************************************************************************
+        ' Get all syllables in the lyrics box and return them in an arraylist
+        '*****************************************************************************************************************
+
+        Dim lyrics As String = Trim(TextboxLyrics.Text)
 
         'Make all words end with +
         lyrics = Replace(lyrics, " ", "+")      
@@ -71,18 +170,15 @@ Public Class Lyricker
 
         'TextBoxLyrics.Text = lyrics
 
-        '*****************************************************************************************************************
-        ' Get all syllables in the lyrics box and put them in an arraylist
 
         Dim syllables As ArrayList = New ArrayList()
-        Dim syllablesCount As Integer = Len(lyrics) - Len(lyrics.Replace("-", "")) _
-                                      + Len(lyrics) - Len(lyrics.Replace("+", "")) + 1 'Get the total number of syllables
+        Dim syllablesTotal As Integer = TotalSyllables(lyrics)
 
         Dim a As Integer = 0    'Start index
         Dim b As Integer        '(-) End index if not last syllable in word 
         Dim c As Integer        '(+) End index if last syllable in word 
 
-        For i As Integer = 1 To syllablesCount - 1
+        For i As Integer = 1 To syllablesTotal - 1
             b = InStr(a + 1, lyrics, "-") 'Find index of next (-)
             c = InStr(a + 1, lyrics, "+") 'Find index of next (+)
 
@@ -95,48 +191,16 @@ Public Class Lyricker
             End If
         Next i
         syllables.Add(Mid(lyrics, a + 1)) 'Add the very last syllable
-
-        '*****************************************************************************************************************
-
-        '*****************************************************************************************************************
-        ' Replace all empty lyric events with their respective syllable
-        Dim chartText() As String = System.IO.File.ReadAllLines(path)
-
-        Dim syllableNo As Integer
-        Dim lyricStart As Integer
-        For i As Integer = LBound(chartText) To UBound(chartText)
-            If not InStr(chartText(i), "= E ""lyric") = 0 ' If a lyric event is on this line
-                lyricStart = InStr(chartText(i), "c") + 1 'Find the start index of where we want to insert the syllable
-                chartText(i) = LSet(chartText(i), lyricStart) 'Cut the string to end after "lyric" (to override existing lyrics in case they uhh exist)
-                Try
-                    chartText(i) = Replace(chartText(i), "lyric ", "lyric " & syllables.Item(syllableNo) & """") 'Add the syllable
-                Catch ex As System.ArgumentOutOfRangeException
-                    printToFile(path, chartText)
-                    MsgBox("Lyrics have been written but there's too few syllables to fill out all the lyric events in the chart. You may be missing some lyrics, have a word that should be split up, or you have too many lyric events")
-                    Exit Sub
-                End Try
-                syllableNo += 1
-            End If
-        Next i
-        '*****************************************************************************************************************
-
-        if Not printToFile(path, chartText)
-            Exit Sub
-        End If
-        If syllableNo < syllables.Count
-            MsgBox("Some of the lyrics have been written. The rest couldn't because there's too many syllables in the text, compared to lyric events. You may have a word that should not be split up, or you have too few lyric events")
-        Else
-            MsgBox("Lyrics written successfully")
-        End If
-    End Sub
-
-    Function printToFile(path As String, chartText() As String) As Boolean
-        Try
-            IO.File.WriteAllLines(path, chartText) 'Overwrite the .chart file
-        Catch ex As Exception
-            MsgBox("Unable to write to file" & vbNewLine & vbNewLine & "Error message: """ & ex.Message & """")
-            Return False
-        End Try
-        Return True
+        return syllables
     End Function
+
+    Private Function TotalSyllables(lyrics As String)
+        Dim syllablesTotal As Integer = Len(lyrics) - Len(lyrics.Replace("-", "")) _
+                                      + Len(lyrics) - Len(lyrics.Replace("+", "")) + 1
+        Return syllablesTotal
+    End Function
+
+    Private sub AddLyrics
+
+    End Sub
 End Class

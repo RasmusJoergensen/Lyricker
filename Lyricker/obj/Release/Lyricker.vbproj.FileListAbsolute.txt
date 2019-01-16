@@ -1,0 +1,11 @@
+C:\Users\SharkGaming\documents\visual studio 2015\Projects\Lyricker\Lyricker\bin\Release\Lyricker.exe.config
+C:\Users\SharkGaming\documents\visual studio 2015\Projects\Lyricker\Lyricker\bin\Release\Lyricker.exe
+C:\Users\SharkGaming\documents\visual studio 2015\Projects\Lyricker\Lyricker\bin\Release\Lyricker.pdb
+C:\Users\SharkGaming\documents\visual studio 2015\Projects\Lyricker\Lyricker\bin\Release\Lyricker.xml
+C:\Users\SharkGaming\documents\visual studio 2015\Projects\Lyricker\Lyricker\obj\Release\Lyricker.vbprojResolveAssemblyReference.cache
+C:\Users\SharkGaming\documents\visual studio 2015\Projects\Lyricker\Lyricker\obj\Release\Lyricker.Lyricker.resources
+C:\Users\SharkGaming\documents\visual studio 2015\Projects\Lyricker\Lyricker\obj\Release\Lyricker.Resources.resources
+C:\Users\SharkGaming\documents\visual studio 2015\Projects\Lyricker\Lyricker\obj\Release\Lyricker.vbproj.GenerateResource.Cache
+C:\Users\SharkGaming\documents\visual studio 2015\Projects\Lyricker\Lyricker\obj\Release\Lyricker.exe
+C:\Users\SharkGaming\documents\visual studio 2015\Projects\Lyricker\Lyricker\obj\Release\Lyricker.xml
+C:\Users\SharkGaming\documents\visual studio 2015\Projects\Lyricker\Lyricker\obj\Release\Lyricker.pdb
