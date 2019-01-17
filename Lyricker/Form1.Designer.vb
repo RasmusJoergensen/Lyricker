@@ -28,6 +28,7 @@ Partial Class Lyricker
         Me.BtnChooseChartFile = New System.Windows.Forms.Button()
         Me.BtnWRITE = New System.Windows.Forms.Button()
         Me.TextboxLyrics = New System.Windows.Forms.RichTextBox()
+        Me.ChkBxReplaceDefault = New System.Windows.Forms.CheckBox()
         Me.SuspendLayout
         '
         'Label1
@@ -91,11 +92,23 @@ Partial Class Lyricker
     " queens."
         Me.TextboxLyrics.WordWrap = false
         '
+        'ChkBxReplaceDefault
+        '
+        Me.ChkBxReplaceDefault.Anchor = System.Windows.Forms.AnchorStyles.Bottom
+        Me.ChkBxReplaceDefault.AutoSize = true
+        Me.ChkBxReplaceDefault.Location = New System.Drawing.Point(380, 488)
+        Me.ChkBxReplaceDefault.Name = "ChkBxReplaceDefault"
+        Me.ChkBxReplaceDefault.Size = New System.Drawing.Size(154, 17)
+        Me.ChkBxReplaceDefault.TabIndex = 6
+        Me.ChkBxReplaceDefault.Text = "Also replace default events"
+        Me.ChkBxReplaceDefault.UseVisualStyleBackColor = true
+        '
         'Lyricker
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6!, 13!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(607, 521)
+        Me.Controls.Add(Me.ChkBxReplaceDefault)
         Me.Controls.Add(Me.TextboxLyrics)
         Me.Controls.Add(Me.BtnWRITE)
         Me.Controls.Add(Me.BtnChooseChartFile)
@@ -113,4 +126,5 @@ End Sub
     Friend WithEvents BtnChooseChartFile As Button
     Friend WithEvents BtnWRITE As Button
     Friend WithEvents TextboxLyrics As RichTextBox
+    Friend WithEvents ChkBxReplaceDefault As CheckBox
 End Class

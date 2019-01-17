@@ -6,6 +6,8 @@ Public Class Lyricker
     Dim writer As System.IO.StreamWriter
     Dim chartText() As String
 
+    Dim replaceDefault As Boolean
+
    <DllImport("user32.dll", CharSet:=CharSet.Auto)> _
     Private Shared Function SendMessage(hWnd As IntPtr, msg As Integer, wParam As Integer, <MarshalAs(UnmanagedType.LPWStr)> lParam As String) As Int32
     End Function
@@ -82,23 +84,73 @@ Public Class Lyricker
 
         Dim syllables As new ArrayList()
         syllables = getSyllables()
-        Dim syllablesTotal As Integer = syllables.Count
-
+        
         Dim syllableNo As Integer
+
+        Dim stringToReplace As String = "lyric "
+        Dim string2ndLastLetter As String = "c"
+
+        For i As Integer = LBound(chartText) To UBound(chartText)
+
+            'if(replaceDefault, InStr(chartText(lineNo), "= E ""Default") <> 0, False)
+            If stringOnLine(i, "= E ""lyric ")
+
+                stringToReplace = "lyric "
+                string2ndLastLetter = "c"
+
+            Else If stringOnLine(i, "= E ""Default") And replaceDefault
+
+                stringToReplace = "Default"
+                string2ndLastLetter = "l"
+
+            Else 'If no phrase event on the line
+                'Write the line without changing it, if it's not a phrase event
+                'Already existing phrase events are skipped because new ones are already written in the above lines
+                'This way we don't get duplicate phrase events and don't keep phrase events that are removed in the text box i.e. deleted a period
+                If InStr(chartText(i), "phrase_") = 0
+                    writer.WriteLine(chartText(i)) 'Just write the line without changing it
+                Else
+                    'Do nothing i.e. skip the line
+                End If
+                Continue For
+            End If
+
+            If syllableNo >= syllables.Count and InStr(chartText(i), "phrase_") = 0
+                writer.WriteLine(chartText(i)) 'Just write the line without changing it 'TODO: write better logic so this line doesn't have to be at twp places
+                syllableNo += 1
+                Continue For
+            End If
+
+            ReplaceLine(i, stringToReplace, string2ndLastLetter, syllables, syllableNo, syllables.Count)
+        Next i
+
+        writer.Close()
+        '*****************************************************************************************************************
+
+        If syllableNo < syllables.Count
+            MsgBox("Some of the lyrics have been written. The rest couldn't because there's too many syllables in the text, compared to lyric events. You may have a word that should not be split up, or you have too few lyric events")
+        Else If syllableNo > syllables.Count
+            MsgBox("Lyrics have been written but there's too few syllables to fill out all the lyric events in the chart. You may be missing some lyrics, have a word that should be split up, or you have too many lyric events")
+        Else
+            MsgBox("Lyrics written successfully")
+        End If
+    End Sub
+    
+    Private Function stringOnLine(lineNo As Integer, _event As String)
+
+        If InStr(chartText(lineNo), _event) <> 0
+            Return True
+        End If
+        Return False
+    End Function
+
+    Private sub ReplaceLine(i As Integer, stringToReplace As String, string2ndLastLetter As String, syllables As ArrayList, ByRef syllableNo As Integer, syllablesTotal As Integer)
+
         Dim lyricStartIndex As Integer
         Dim tickNumberEndIndex As Integer
         Dim tickNumber As Integer
 
-        For i As Integer = LBound(chartText) To UBound(chartText)
-
-            If InStr(chartText(i), "= E ""lyric") <> 0 ' If a lyric event is on this line
-
-                If syllableNo = syllables.Count
-                    syllableNo += 1
-                    Exit For
-                End If
-
-                'Check if we should write a phrase_start event before the lyric event
+        'Check if we should write a phrase_start event before the lyric event
                 If syllableNo = 0 OrElse InStr(syllables.Item(syllableNo - 1), ".") <> 0 'If first syllable, or if a period is in the previous syllable
                     'Get the tick number of the current lyric event, so that we can add a phrase_start event a specified number of ticks BEFORE it
                     tickNumberEndIndex = InStr(chartText(i), "=") - 1
@@ -107,9 +159,9 @@ Public Class Lyricker
                 End If
                 
                 'Write the lyric event with lyrics
-                lyricStartIndex = InStr(chartText(i), "c") + 1 'Find the start index of where we want to insert the syllable
-                chartText(i) = LSet(chartText(i), lyricStartIndex) 'Cut the string to end after "lyric" (to override existing lyrics in case they uhh exist)
-                chartText(i) = Replace(chartText(i), "lyric ", "lyric " & Replace(syllables.Item(syllableNo), ".", "") & """") 'Add the syllable
+                lyricStartIndex = InStr(chartText(i), string2ndLastLetter) + 1 'Find the start index of where we want to insert the syllable
+                chartText(i) = LSet(chartText(i), lyricStartIndex) 'Cut the string to end after "lyric" (to override existing lyrics)
+                chartText(i) = Replace(chartText(i), stringToReplace, "lyric " & Replace(syllables.Item(syllableNo), ".", "") & """") 'Add the syllable
                 writer.WriteLine(chartText(i))
 
                 'Check if we should write a phrase_end event after the lyric event
@@ -123,7 +175,7 @@ Public Class Lyricker
                     Else
                     'Get the tick number of the NEXT lyric event, so that we can add a phrase_end event a specified number of ticks BEFORE it
                     For j As Integer = i + 1 To UBound(chartText)
-                        If InStr(chartText(j), "= E ""lyric") <> 0
+                        If InStr(chartText(j), "= E """ & stringToReplace) <> 0       ' "Lyric"
                             tickNumberEndIndex = InStr(chartText(j), "=") - 1
                             tickNumber = RSet(chartText(j), tickNumberEndIndex)
                             Exit For
@@ -133,27 +185,6 @@ Public Class Lyricker
                     End If
                 End If
                 syllableNo += 1
-            Else 'If no phrase event on the line
-                'Just write the line without changing it, if it's not a phrase event
-                'Already existing phrase events are skipped because new ones are already written in the above lines
-                'This way we don't get duplicate phrase events and don't keep phrase events that are removed in the text box i.e. deleted a period
-                If InStr(chartText(i), "phrase_") = 0 
-                    writer.WriteLine(chartText(i)) 'Just write the line without changing it
-                Else
-                    'Do nothing i.e. skip the line
-                End If
-            End If
-        Next i
-        writer.Close()
-        '*****************************************************************************************************************
-
-        If syllableNo < syllables.Count
-            MsgBox("Some of the lyrics have been written. The rest couldn't because there's too many syllables in the text, compared to lyric events. You may have a word that should not be split up, or you have too few lyric events")
-        Else If syllableNo > syllables.Count
-            MsgBox("Lyrics have been written but there's too few syllables to fill out all the lyric events in the chart. You may be missing some lyrics, have a word that should be split up, or you have too many lyric events")
-        Else
-            MsgBox("Lyrics written successfully")
-        End If
     End Sub
 
     Private Function getSyllables
@@ -200,7 +231,8 @@ Public Class Lyricker
         Return syllablesTotal
     End Function
 
-    Private sub AddLyrics
 
+    Private Sub ChkBxReplaceDefault_CheckedChanged(sender As Object, e As EventArgs) Handles ChkBxReplaceDefault.CheckedChanged
+        replaceDefault = Not replaceDefault
     End Sub
 End Class
