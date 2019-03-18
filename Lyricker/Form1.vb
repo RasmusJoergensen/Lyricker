@@ -116,7 +116,7 @@ Public Class Lyricker
             End If
 
             If syllableNo >= syllables.Count and InStr(chartText(i), "phrase_") = 0
-                writer.WriteLine(chartText(i)) 'Just write the line without changing it 'TODO: write better logic so this line doesn't have to be at twp places
+                writer.WriteLine(chartText(i)) 'Just write the line without changing it 'TODO: write better logic so this line doesn't have to be at two places
                 syllableNo += 1
                 Continue For
             End If
@@ -128,17 +128,17 @@ Public Class Lyricker
         '*****************************************************************************************************************
 
         If syllableNo < syllables.Count
-            MsgBox("Some of the lyrics have been written. The rest couldn't because there's too many syllables in the text, compared to lyric events. You may have a word that should not be split up, or you have too few lyric events")
+            MsgBox("Too few lyric events:" + vbNewLine + vbNewLine  + "Some of the lyrics have been written. The rest couldn't because there's too many syllables in the text, compared to lyric events. You may have a word that should not be split up, or you have too few lyric events.")
         Else If syllableNo > syllables.Count
-            MsgBox("Lyrics have been written but there's too few syllables to fill out all the lyric events in the chart. You may be missing some lyrics, have a word that should be split up, or you have too many lyric events")
+            MsgBox("Too many lyric events:" + vbNewLine + vbNewLine + "Lyrics have been written but there's too few syllables to fill out all the lyric events in the chart. You may be missing some lyrics, have a word that should be split up, or you have too many lyric events.")
         Else
             MsgBox("Lyrics written successfully")
         End If
     End Sub
     
-    Private Function stringOnLine(lineNo As Integer, _event As String)
+    Private Function stringOnLine(lineNo As Integer, target As String)
 
-        If InStr(chartText(lineNo), _event) <> 0
+        If InStr(chartText(lineNo), target) <> 0
             Return True
         End If
         Return False

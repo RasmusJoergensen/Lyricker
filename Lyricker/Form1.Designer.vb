@@ -51,7 +51,6 @@ Partial Class Lyricker
         Me.TextBoxFilePath.Name = "TextBoxFilePath"
         Me.TextBoxFilePath.Size = New System.Drawing.Size(472, 20)
         Me.TextBoxFilePath.TabIndex = 2
-        Me.TextBoxFilePath.Text = "C:\Users\SharkGaming\Desktop\Aborted - TerrorVision\notes.chart"
         '
         'BtnChooseChartFile
         '
@@ -87,9 +86,7 @@ Partial Class Lyricker
         Me.TextboxLyrics.ShowSelectionMargin = true
         Me.TextboxLyrics.Size = New System.Drawing.Size(583, 393)
         Me.TextboxLyrics.TabIndex = 5
-        Me.TextboxLyrics.Text = "Gro-tesque ma-nic dis-play of mi-se-ry."&Global.Microsoft.VisualBasic.ChrW(10)&"For-fait va-lues, re-fuge for va-ni-ty."&Global.Microsoft.VisualBasic.ChrW(10)&"U"& _ 
-    "n-ho-ly mas-tur-ba-tion."&Global.Microsoft.VisualBasic.ChrW(10)&"Self in-flict-ed dra-ma."&Global.Microsoft.VisualBasic.ChrW(10)&"For the dra-ma crav-ing dra-ma"& _ 
-    " queens."
+        Me.TextboxLyrics.Text = ""
         Me.TextboxLyrics.WordWrap = false
         '
         'ChkBxReplaceDefault
